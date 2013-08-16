@@ -1,5 +1,5 @@
 
-class Spree::Calculator::SimpleWeight < Spree::Calculator
+class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
   preference :costs_string, :text, :default => "1:5\n2:7\n5:10\n10:15\n100:50"
   preference :default_weight, :decimal, :default => 1
   preference :max_item_size, :decimal, :default => 0
@@ -26,23 +26,14 @@ class Spree::Calculator::SimpleWeight < Spree::Calculator
     true
   end
 
-  def compute(object)
-    return 0 if object.nil?
-    case object
-      when Spree::Order
-        compute_order(object)
-      when Spree::Shipment
-        compute_order(object.order)
-    end
-  end
-
   private
 
-  def compute_order(order)
-    line_items_total = order.line_items.sum(&:total)
+  def compute_package(package)
+    content_items = package.contents
+    line_items_total = total(content_items)
     handling_fee = self.preferred_handling_max > line_items_total ? self.preferred_handling_fee : 0
 
-    total_weight = total_weight(order)
+    total_weight = total_weight(package)
     costs = costs_string_to_hash(self.preferred_costs_string)
     weight_class = costs.keys.select { |w| total_weight <= w }.min
     shipping_costs = costs[weight_class]
@@ -77,9 +68,9 @@ class Spree::Calculator::SimpleWeight < Spree::Calculator
     costs
   end
 
-  def total_weight(order)
+  def total_weight(package)
     weight = 0
-    order.line_items.each do |item|
+    package.contents.each do |item|
       weight += item.quantity * (item.variant.weight || self.preferred_default_weight)
     end
     weight
