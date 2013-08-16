@@ -16,10 +16,10 @@ class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
     super
   end
 
-  def available?(order)
-    return false if order_overweight?(order) or !costs_string_valid?
+  def available?(content_items)
+    return false if order_overweight?(content_items) or !costs_string_valid?
     if self.preferred_max_item_size > 0
-      order.line_items.each do |item|
+      package.contents.each do |item|
         return false if item_oversized?(item) or item_overweight?(item)
       end
     end
@@ -33,7 +33,7 @@ class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
     line_items_total = total(content_items)
     handling_fee = self.preferred_handling_max > line_items_total ? self.preferred_handling_fee : 0
 
-    total_weight = total_weight(package)
+    total_weight = total_weight(content_items)
     costs = costs_string_to_hash(self.preferred_costs_string)
     weight_class = costs.keys.select { |w| total_weight <= w }.min
     shipping_costs = costs[weight_class]
@@ -53,8 +53,8 @@ class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
     sizes[0] > self.preferred_max_item_size ? true : false
   end
 
-  def order_overweight?(order)
-    total_weight = total_weight(order)
+  def order_overweight?(content_items)
+    total_weight = total_weight(content_items)
     max_weight = costs_string_to_hash(self.preferred_costs_string).keys.max
     total_weight > max_weight ? true : false
   end
@@ -68,9 +68,9 @@ class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
     costs
   end
 
-  def total_weight(package)
+  def total_weight(contents)
     weight = 0
-    package.contents.each do |item|
+    contents.each do |item|
       weight += item.quantity * (item.variant.weight || self.preferred_default_weight)
     end
     weight
