@@ -20,7 +20,7 @@ class Spree::Calculator::Shipping::SimpleWeight < Spree::ShippingCalculator
     return false if order_overweight?(package.contents) or !costs_string_valid?
     if self.preferred_max_item_size > 0
       package.contents.each do |item|
-        return false if item_oversized?(item) or item_overweight?(item)
+        return false if item_oversized?(item)
       end
     end
     true
